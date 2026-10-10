@@ -1,0 +1,21 @@
+# Python virtual environment
+.venv/
+venv/
+ENV/
+
+# Python compiled bytecode
+__pycache__/
+*.pyc
+
+# PyInstaller build files
+build/
+dist/
+*.spec
+
+# Local application config (generated on first run per machine)
+penguin_config.json
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.swp
