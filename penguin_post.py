@@ -15,7 +15,7 @@ import pystray
 PORT = 50005
 BROADCAST_IP = '<broadcast>'
 CONFIG_FILE = 'penguin_config.json'
-CURRENT_VERSION = "v1.0.2"
+CURRENT_VERSION = "v1.0.5"
 GITHUB_REPO = "HypnoticPenguin/penguin-post"
 
 app_running = True
