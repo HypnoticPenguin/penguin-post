@@ -15,7 +15,7 @@ import pystray
 PORT = 50005
 BROADCAST_IP = '<broadcast>'
 CONFIG_FILE = 'penguin_config.json'
-CURRENT_VERSION = "v1.0.0"  # Increment this with every new GitHub release!
+CURRENT_VERSION = "v1.0.1"
 GITHUB_REPO = "HypnoticPenguin/penguin-post"
 
 app_running = True
@@ -23,7 +23,6 @@ tray_icon = None
 my_ip = ""
 machine_name = ""
 
-# Tracks discovered peers: {ip: {"name": name, "last_seen": timestamp}}
 active_peers = {}
 peers_lock = threading.Lock()
 
@@ -38,10 +37,44 @@ def get_local_ip():
     except Exception:
         return "127.0.0.1"
 
+def manage_windows_startup(enable=True):
+    """Adds or removes the compiled .exe from the Windows Startup folder."""
+    if not getattr(sys, 'frozen', False):
+        return  # Only works when compiled as an .exe
+
+    try:
+        startup_folder = os.path.join(os.environ['APPDATA'], r'Microsoft\Windows\Start Menu\Programs\Startup')
+        shortcut_path = os.path.join(startup_folder, 'PenguinPost.lnk')
+        exe_path = sys.executable
+
+        if enable:
+            # Create a Windows shortcut using PowerShell
+            ps_script = f"""
+            $WshShell = New-Object -comObject WScript.Shell
+            $Shortcut = $WshShell.CreateShortcut("{shortcut_path}")
+            $Shortcut.TargetPath = "{exe_path}"
+            $Shortcut.Save()
+            """
+            subprocess.run(["powershell", "-Command", ps_script], capture_output=True)
+        else:
+            if os.path.exists(shortcut_path):
+                os.remove(shortcut_path)
+    except Exception as e:
+        print(f"Startup configuration failed: {e}")
+
+def check_startup_status():
+    """Checks if the startup shortcut currently exists."""
+    if not getattr(sys, 'frozen', False):
+        return False
+    startup_folder = os.path.join(os.environ['APPDATA'], r'Microsoft\Windows\Start Menu\Programs\Startup')
+    return os.path.exists(os.path.join(startup_folder, 'PenguinPost.lnk'))
+
 def load_or_prompt_name():
-    """Loads machine name from config or prompts user to create one."""
+    """Loads machine name and configures startup on first run."""
     global machine_name
-    if os.path.exists(CONFIG_FILE):
+    config_exists = os.path.exists(CONFIG_FILE)
+    
+    if config_exists:
         try:
             with open(CONFIG_FILE, 'r') as f:
                 data = json.load(f)
@@ -62,6 +95,9 @@ def load_or_prompt_name():
         machine_name = name if name else default_name
         root.destroy()
         
+        # Automatically enable startup on first run if compiled
+        manage_windows_startup(enable=True)
+        
         try:
             with open(CONFIG_FILE, 'w') as f:
                 json.dump({"machine_name": machine_name}, f)
@@ -70,9 +106,16 @@ def load_or_prompt_name():
 
     prompt()
 
+def toggle_startup(icon, item):
+    """Toggles the Windows startup setting from the tray menu."""
+    current_status = check_startup_status()
+    manage_windows_startup(enable=not current_status)
+    new_status = check_startup_status()
+    status_text = "Enabled" if new_status else "Disabled"
+    print(f"Startup toggled: {status_text}")
+
 def check_for_updates():
     """Checks GitHub releases for a newer version and updates automatically if packaged."""
-    # Only auto-update if running as a compiled PyInstaller executable
     if not getattr(sys, 'frozen', False):
         return
 
@@ -316,15 +359,19 @@ def main():
     my_ip = get_local_ip()
     load_or_prompt_name()
 
-    # Check GitHub releases for updates in the background on launch
     threading.Thread(target=check_for_updates, daemon=True).start()
-
     threading.Thread(target=listen_for_messages, daemon=True).start()
     threading.Thread(target=network_announcer, daemon=True).start()
 
     image = create_tray_image()
     menu = pystray.Menu(
         pystray.MenuItem(f"Send Message ({machine_name})...", open_composer_dialog, default=True),
+        pystray.Menu.SEPARATOR,
+        pystray.MenuItem(
+            "Run at Startup", 
+            toggle_startup, 
+            checked=lambda item: check_startup_status()
+        ),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Quit", on_quit)
     )
