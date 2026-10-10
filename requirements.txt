@@ -1,0 +1,4 @@
+pystray
+plyer
+Pillow
+pyinstaller

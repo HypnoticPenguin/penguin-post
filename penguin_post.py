@@ -15,7 +15,7 @@ import pystray
 PORT = 50005
 BROADCAST_IP = '<broadcast>'
 CONFIG_FILE = 'penguin_config.json'
-CURRENT_VERSION = "v1.0.1"
+CURRENT_VERSION = "v1.0.2"
 GITHUB_REPO = "HypnoticPenguin/penguin-post"
 
 app_running = True
@@ -48,7 +48,6 @@ def manage_windows_startup(enable=True):
         exe_path = sys.executable
 
         if enable:
-            # Create a Windows shortcut using PowerShell
             ps_script = f"""
             $WshShell = New-Object -comObject WScript.Shell
             $Shortcut = $WshShell.CreateShortcut("{shortcut_path}")
@@ -95,7 +94,6 @@ def load_or_prompt_name():
         machine_name = name if name else default_name
         root.destroy()
         
-        # Automatically enable startup on first run if compiled
         manage_windows_startup(enable=True)
         
         try:
@@ -110,9 +108,6 @@ def toggle_startup(icon, item):
     """Toggles the Windows startup setting from the tray menu."""
     current_status = check_startup_status()
     manage_windows_startup(enable=not current_status)
-    new_status = check_startup_status()
-    status_text = "Enabled" if new_status else "Disabled"
-    print(f"Startup toggled: {status_text}")
 
 def check_for_updates():
     """Checks GitHub releases for a newer version and updates automatically if packaged."""
@@ -161,7 +156,7 @@ def show_large_alert(sender_name, sender_ip, message):
     def alert_window():
         root = tk.Tk()
         root.withdraw()
-        root.title("PenguinPost Alert!")
+        root.title(f"PenguinPost Alert ({CURRENT_VERSION})")
         root.geometry("500x300")
         root.attributes('-topmost', True)
         root.configure(bg="#2c3e50")
@@ -277,15 +272,17 @@ def open_composer_dialog(icon, item):
     def run_dialog():
         win = tk.Tk()
         win.withdraw()
-        win.title(f"PenguinPost ({machine_name})")
-        win.geometry("420x320")
+        win.title(f"PenguinPost {CURRENT_VERSION} - ({machine_name})")
+        win.geometry("420x350")
         win.attributes('-topmost', True)
         win.configure(bg="#ecf0f1")
         
         win.update_idletasks()
-        x = (win.winfo_screenwidth() // 2) - (210)
-        y = (win.winfo_screenheight() // 2) - (160)
-        win.geometry(f'420x320+{x}+{y}')
+        width = win.winfo_width()
+        height = win.winfo_height()
+        x = (win.winfo_screenwidth() // 2) - (width // 2)
+        y = (win.winfo_screenheight() // 2) - (height // 2)
+        win.geometry(f'{width}x{height}+{x}+{y}')
 
         tk.Label(win, text="Send Target:", bg="#ecf0f1", font=("Arial", 10, "bold")).pack(anchor="w", padx=20, pady=(15, 0))
         
@@ -334,7 +331,11 @@ def open_composer_dialog(icon, item):
                 send_network_message(target_ip, message_text)
 
         send_btn = tk.Button(win, text="Send Notification", command=on_send, bg="#27ae60", fg="white", font=("Arial", 10, "bold"), relief="flat", pady=8)
-        send_btn.pack(fill="x", padx=20, pady=20)
+        send_btn.pack(fill="x", padx=20, pady=10)
+
+        # Version footer label inside the composer window
+        version_label = tk.Label(win, text=f"PenguinPost {CURRENT_VERSION}", fg="#7f8c8d", bg="#ecf0f1", font=("Arial", 8))
+        version_label.pack(side="bottom", pady=5)
 
         win.deiconify()
         win.mainloop()
@@ -376,7 +377,9 @@ def main():
         pystray.MenuItem("Quit", on_quit)
     )
 
-    tray_icon = pystray.Icon("PenguinPost", image, f"PenguinPost - {machine_name} ({my_ip})", menu)
+    # Tray tooltip now includes version number clearly
+    tray_tooltip = f"PenguinPost {CURRENT_VERSION} - {machine_name} ({my_ip})"
+    tray_icon = pystray.Icon("PenguinPost", image, tray_tooltip, menu)
     tray_icon.run()
 
 if __name__ == '__main__':
