@@ -14,10 +14,15 @@ import pystray
 # Configuration
 PORT = 50005
 BROADCAST_IP = '<broadcast>'
-CONFIG_FILE = 'penguin_config.json'
 CURRENT_VERSION = "v1.0.5"
 GITHUB_REPO = "HypnoticPenguin/penguin-post"
 
+# Ensure config file resolves relative to the script/exe location, not the working directory
+if getattr(sys, 'frozen', False):
+    CONFIG_FILE = os.path.join(os.path.dirname(sys.executable), 'penguin_config.json')
+else:
+    CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'penguin_config.json')
+    
 app_running = True
 tray_icon = None
 my_ip = ""
