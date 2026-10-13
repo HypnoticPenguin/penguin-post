@@ -1,9 +1,14 @@
 # penguin-post notes
 
-To generate a new release..
-git add .
-git commit -m "Release v1.0.1"
-git push origin main
+**To generate a new release..**
 
-git tag v1.0.1
-git push origin v1.0.1
+```bash
+git add .
+git commit -m "Release vx.y.x"
+git push origin main
+```
+
+```bash
+git tag vx.y.z
+git push origin vx.y.z
+```
